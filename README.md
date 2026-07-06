@@ -1,13 +1,11 @@
-# Qpid Family Daycare Landing Page
 
-This is a simple, static landing page for a home daycare. The main sign artwork is used as a full-bleed background image, with a soft overlay and readable content on top.
+  # Interactive Storybook Website
 
-## Getting started
+  This is a code bundle for Interactive Storybook Website. The original project is available at https://www.figma.com/design/bINRehQByrJVBCpX31bavW/Interactive-Storybook-Website.
 
-- Open `index.html` directly in your browser, or
-- Serve the folder with any static file server (for example, `npx serve .`).
+  ## Running the code
 
-## Assets
+  Run `npm i` to install the dependencies.
 
-- Background image: `assets/qpid-daycare-bg.png`
-
+  Run `npm run dev` to start the development server.
+  
