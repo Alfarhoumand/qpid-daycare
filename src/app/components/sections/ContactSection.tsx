@@ -20,6 +20,9 @@ type FormValues = {
 const fieldBase =
   "mt-1.5 rounded-2xl border-sand-300 bg-white h-12 text-cocoa-600 focus-visible:ring-qpid-yellow/40";
 
+// Public Web3Forms access key (safe for client-side use).
+const WEB3FORMS_ACCESS_KEY = "ff9ec9cd-f7f2-467f-b344-77bcbcf9ebdf";
+
 export function ContactSection() {
   const {
     control,
@@ -31,12 +34,41 @@ export function ContactSection() {
   });
 
   const onSubmit = async (data: FormValues) => {
-    // Mock submit — no backend. Replace with a real endpoint later.
-    await new Promise((r) => setTimeout(r, 700));
-    toast.success(`Thank you, ${data.parentName.split(" ")[0] || "friend"}! 💛`, {
-      description: "We received your tour request and will be in touch very soon.",
-    });
-    reset();
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: `Tour request from ${data.parentName}`,
+          from_name: data.parentName,
+          name: data.parentName,
+          email: data.contact.includes("@") ? data.contact : "noreply@qpid-daycare.com",
+          phone_or_email: data.contact,
+          child_age: data.childAge || "Not provided",
+          start_date: data.startDate || "Not provided",
+          message: data.message || "(No message)",
+        }),
+      });
+
+      const result = (await response.json()) as { success: boolean; message?: string };
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Submission failed");
+      }
+
+      toast.success(`Thank you, ${data.parentName.split(" ")[0] || "friend"}! 💛`, {
+        description: "We received your tour request and will be in touch very soon.",
+      });
+      reset();
+    } catch {
+      toast.error("Something went wrong", {
+        description: "Please try again or email hello@qpid-daycare.com.",
+      });
+    }
   };
 
   return (
