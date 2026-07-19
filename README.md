@@ -14,28 +14,23 @@ pnpm build    # output in dist/
 pnpm preview  # preview the production build
 ```
 
-## Deploy to Cloudflare Pages (static)
+## Deploy to Cloudflare (static Worker assets)
 
-### Option A — Git integration (dashboard)
+This repo is set up for a **Workers** Git project (not classic Pages). Vite builds to `dist/`, and Wrangler uploads that folder as static assets via [`wrangler.toml`](wrangler.toml).
 
-1. Push this repo to GitHub/GitLab.
-2. In [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
-3. Use these build settings:
+### Git integration (dashboard)
 
 | Setting | Value |
 | --- | --- |
-| Framework preset | Vite |
-| Build command | `pnpm install && pnpm build` |
-| Build output directory | `dist` |
+| Build command | `pnpm build` |
+| Deploy command | `npx wrangler deploy` |
 
-4. Deploy. Later pushes to the production branch redeploy automatically.
+Cloudflare already runs `pnpm install` before your build command. Push to `main` to redeploy.
 
-### Option B — Wrangler CLI
+### Wrangler CLI
 
 ```bash
 pnpm install
 npx wrangler login
 pnpm deploy
 ```
-
-That runs `vite build` and uploads `dist/` using [`wrangler.toml`](wrangler.toml).
