@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import { Reveal } from "../motion/Reveal";
@@ -6,6 +7,14 @@ import { FloatingObject } from "../motion/FloatingObject";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../ui/dialog";
 import { Heart, Sun, Cloud, Flower } from "../illustrations/QpidIllustrations";
 import { Phone, Mail, MapPin } from "lucide-react";
 
@@ -23,7 +32,23 @@ const fieldBase =
 // Public Web3Forms access key (safe for client-side use).
 const WEB3FORMS_ACCESS_KEY = "ff9ec9cd-f7f2-467f-b344-77bcbcf9ebdf";
 
+const TOUR_SENT_PARAM = "tour";
+const TOUR_SENT_VALUE = "sent";
+
+function hasTourSentParam() {
+  return new URLSearchParams(window.location.search).get(TOUR_SENT_PARAM) === TOUR_SENT_VALUE;
+}
+
+function clearTourSentParam() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.get(TOUR_SENT_PARAM) !== TOUR_SENT_VALUE) return;
+  url.searchParams.delete(TOUR_SENT_PARAM);
+  const next = `${url.pathname}${url.search}${url.hash || "#contact"}`;
+  window.history.replaceState({}, "", next);
+}
+
 export function ContactSection() {
+  const [thanksOpen, setThanksOpen] = useState(false);
   const {
     control,
     handleSubmit,
@@ -32,6 +57,25 @@ export function ContactSection() {
   } = useForm<FormValues>({
     defaultValues: { parentName: "", childAge: "", startDate: "", contact: "", message: "" },
   });
+
+  useEffect(() => {
+    if (!hasTourSentParam()) return;
+    document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setThanksOpen(true);
+  }, []);
+
+  const closeThanks = (open: boolean) => {
+    setThanksOpen(open);
+    if (!open) clearTourSentParam();
+  };
+
+  const showThanks = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set(TOUR_SENT_PARAM, TOUR_SENT_VALUE);
+    url.hash = "contact";
+    window.history.replaceState({}, "", url.toString());
+    setThanksOpen(true);
+  };
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -60,10 +104,8 @@ export function ContactSection() {
         throw new Error(result.message || "Submission failed");
       }
 
-      toast.success(`Thank you, ${data.parentName.split(" ")[0] || "friend"}! 💛`, {
-        description: "We received your tour request and will be in touch very soon.",
-      });
       reset();
+      showThanks();
     } catch {
       toast.error("Something went wrong", {
         description: "Please try again or email hello@qpid-daycare.com.",
@@ -77,6 +119,27 @@ export function ContactSection() {
       className="relative py-24 md:py-32 overflow-hidden"
       style={{ background: "linear-gradient(180deg,#FFF7E8 0%, #FDEBD8 100%)" }}
     >
+      <Dialog open={thanksOpen} onOpenChange={closeThanks}>
+        <DialogContent className="rounded-[2rem] border-sand-300 bg-qpid-cream sm:max-w-md">
+          <DialogHeader className="items-center text-center sm:items-center sm:text-center">
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-qpid-yellow/30">
+              <Heart className="h-8 w-8" color="#F07A6A" />
+            </div>
+            <DialogTitle className="font-heading text-2xl text-cocoa-600">
+              Tour request received
+            </DialogTitle>
+            <DialogDescription className="font-body text-base text-cocoa-400">
+              Thank you! We got your message and will be in touch soon to arrange a warm visit.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <QpidButton type="button" onClick={() => closeThanks(false)}>
+              Close
+            </QpidButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <FloatingObject className="absolute top-10 left-[8%]" duration={11} amplitude={14}>
         <Cloud className="w-40 opacity-70" />
       </FloatingObject>
