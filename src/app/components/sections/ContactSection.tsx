@@ -20,6 +20,7 @@ import { Phone, Mail, MapPin } from "lucide-react";
 
 type FormValues = {
   parentName: string;
+  childName: string;
   childAge: string;
   startDate: string;
   contact: string;
@@ -30,11 +31,28 @@ type FormValues = {
 const fieldBase =
   "mt-1.5 rounded-2xl border-sand-300 bg-white h-12 text-cocoa-600 focus-visible:ring-qpid-yellow/40";
 
+const errorTextClass = "text-qpid-coral text-[0.85rem] mt-1 font-body";
+
 // Public Web3Forms access key (safe for client-side use).
 const WEB3FORMS_ACCESS_KEY = "ff9ec9cd-f7f2-467f-b344-77bcbcf9ebdf";
 
 const TOUR_SENT_PARAM = "tour";
 const TOUR_SENT_VALUE = "sent";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^[\d\s()+.-]{7,}$/;
+
+function isPhoneOrEmail(value: string) {
+  const trimmed = value.trim();
+  return EMAIL_PATTERN.test(trimmed) || PHONE_PATTERN.test(trimmed);
+}
+
+function requiredTrimmed(message: string) {
+  return {
+    required: message,
+    validate: (value: string) => value.trim().length > 0 || message,
+  };
+}
 
 function hasTourSentParam() {
   return new URLSearchParams(window.location.search).get(TOUR_SENT_PARAM) === TOUR_SENT_VALUE;
@@ -60,6 +78,7 @@ export function ContactSection() {
   } = useForm<FormValues>({
     defaultValues: {
       parentName: "",
+      childName: "",
       childAge: "",
       startDate: "",
       contact: "",
@@ -102,17 +121,18 @@ export function ContactSection() {
       // Safari edge cases with JSON content negotiation.
       const formData = new FormData();
       formData.append("access_key", WEB3FORMS_ACCESS_KEY);
-      formData.append("subject", `Tour request from ${data.parentName}`);
-      formData.append("from_name", data.parentName);
-      formData.append("name", data.parentName);
+      formData.append("subject", `Tour request from ${data.parentName.trim()}`);
+      formData.append("from_name", data.parentName.trim());
+      formData.append("name", data.parentName.trim());
       formData.append(
         "email",
-        data.contact.includes("@") ? data.contact : "noreply@qpid-daycare.com",
+        data.contact.includes("@") ? data.contact.trim() : "noreply@qpid-daycare.com",
       );
-      formData.append("phone_or_email", data.contact);
-      formData.append("child_age", data.childAge || "Not provided");
+      formData.append("phone_or_email", data.contact.trim());
+      formData.append("child_name", data.childName.trim());
+      formData.append("child_age", data.childAge.trim());
       formData.append("start_date", data.startDate || "Not provided");
-      formData.append("message", data.message || "(No message)");
+      formData.append("message", data.message.trim() || "(No message)");
       // Omit botcheck when empty — unchecked honeypot must not be present.
 
       const response = await fetch("https://api.web3forms.com/submit", {
@@ -257,11 +277,12 @@ export function ContactSection() {
                 <Controller
                   name="parentName"
                   control={control}
-                  rules={{ required: "Please share your name" }}
+                  rules={requiredTrimmed("Please share your name")}
                   render={({ field: { ref, ...field } }) => (
                     <Input
                       {...field}
                       id="parentName"
+                      autoComplete="name"
                       placeholder="Your name"
                       className={fieldBase}
                       aria-invalid={!!errors.parentName}
@@ -269,33 +290,63 @@ export function ContactSection() {
                   )}
                 />
                 {errors.parentName && (
-                  <p className="text-qpid-coral text-[0.85rem] mt-1 font-body">
-                    {errors.parentName.message}
-                  </p>
+                  <p className={errorTextClass}>{errors.parentName.message}</p>
                 )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="childName">Child&rsquo;s name</Label>
+                  <Controller
+                    name="childName"
+                    control={control}
+                    rules={requiredTrimmed("Please share your child's name")}
+                    render={({ field: { ref, ...field } }) => (
+                      <Input
+                        {...field}
+                        id="childName"
+                        autoComplete="off"
+                        placeholder="Child's name"
+                        className={fieldBase}
+                        aria-invalid={!!errors.childName}
+                      />
+                    )}
+                  />
+                  {errors.childName && (
+                    <p className={errorTextClass}>{errors.childName.message}</p>
+                  )}
+                </div>
+                <div>
                   <Label htmlFor="childAge">Child&rsquo;s age</Label>
                   <Controller
                     name="childAge"
                     control={control}
+                    rules={requiredTrimmed("Please share your child's age")}
                     render={({ field: { ref, ...field } }) => (
-                      <Input {...field} id="childAge" placeholder="e.g. 18 months" className={fieldBase} />
+                      <Input
+                        {...field}
+                        id="childAge"
+                        placeholder="e.g. 18 months"
+                        className={fieldBase}
+                        aria-invalid={!!errors.childAge}
+                      />
                     )}
                   />
+                  {errors.childAge && (
+                    <p className={errorTextClass}>{errors.childAge.message}</p>
+                  )}
                 </div>
-                <div>
-                  <Label htmlFor="startDate">Desired start date</Label>
-                  <Controller
-                    name="startDate"
-                    control={control}
-                    render={({ field: { ref, ...field } }) => (
-                      <Input {...field} id="startDate" type="date" className={fieldBase} />
-                    )}
-                  />
-                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="startDate">Desired start date</Label>
+                <Controller
+                  name="startDate"
+                  control={control}
+                  render={({ field: { ref, ...field } }) => (
+                    <Input {...field} id="startDate" type="date" className={fieldBase} />
+                  )}
+                />
               </div>
 
               <div>
@@ -303,11 +354,18 @@ export function ContactSection() {
                 <Controller
                   name="contact"
                   control={control}
-                  rules={{ required: "Please add a phone or email" }}
+                  rules={{
+                    required: "Please add a phone or email",
+                    validate: (value) => {
+                      if (!value.trim()) return "Please add a phone or email";
+                      return isPhoneOrEmail(value) || "Enter a valid phone number or email";
+                    },
+                  }}
                   render={({ field: { ref, ...field } }) => (
                     <Input
                       {...field}
                       id="contact"
+                      autoComplete="tel"
                       placeholder="How can we reach you?"
                       className={fieldBase}
                       aria-invalid={!!errors.contact}
@@ -315,9 +373,7 @@ export function ContactSection() {
                   )}
                 />
                 {errors.contact && (
-                  <p className="text-qpid-coral text-[0.85rem] mt-1 font-body">
-                    {errors.contact.message}
-                  </p>
+                  <p className={errorTextClass}>{errors.contact.message}</p>
                 )}
               </div>
 
