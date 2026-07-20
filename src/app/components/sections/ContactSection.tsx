@@ -50,6 +50,7 @@ function clearTourSentParam() {
 
 export function ContactSection() {
   const [thanksOpen, setThanksOpen] = useState(false);
+  const [isSent, setIsSent] = useState(false);
   const {
     control,
     register,
@@ -70,6 +71,7 @@ export function ContactSection() {
   useEffect(() => {
     if (!hasTourSentParam()) return;
     document.getElementById("contact")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setIsSent(true);
     setThanksOpen(true);
   }, []);
 
@@ -79,14 +81,13 @@ export function ContactSection() {
   };
 
   const showThanks = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set(TOUR_SENT_PARAM, TOUR_SENT_VALUE);
-    url.hash = "contact";
-    window.history.replaceState({}, "", url.toString());
+    setIsSent(true);
     setThanksOpen(true);
   };
 
   const onSubmit = async (data: FormValues) => {
+    if (isSent || isSubmitting) return;
+
     // Honeypot tripped — pretend success so bots learn nothing.
     if (data.botcheck) {
       reset();
@@ -94,42 +95,59 @@ export function ContactSection() {
       return;
     }
 
+    let accepted = false;
+
     try {
+      // FormData matches Web3Forms' primary client examples and avoids
+      // Safari edge cases with JSON content negotiation.
+      const formData = new FormData();
+      formData.append("access_key", WEB3FORMS_ACCESS_KEY);
+      formData.append("subject", `Tour request from ${data.parentName}`);
+      formData.append("from_name", data.parentName);
+      formData.append("name", data.parentName);
+      formData.append(
+        "email",
+        data.contact.includes("@") ? data.contact : "noreply@qpid-daycare.com",
+      );
+      formData.append("phone_or_email", data.contact);
+      formData.append("child_age", data.childAge || "Not provided");
+      formData.append("start_date", data.startDate || "Not provided");
+      formData.append("message", data.message || "(No message)");
+      // Omit botcheck when empty — unchecked honeypot must not be present.
+
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_ACCESS_KEY,
-          subject: `Tour request from ${data.parentName}`,
-          from_name: data.parentName,
-          name: data.parentName,
-          email: data.contact.includes("@") ? data.contact : "noreply@qpid-daycare.com",
-          phone_or_email: data.contact,
-          child_age: data.childAge || "Not provided",
-          start_date: data.startDate || "Not provided",
-          message: data.message || "(No message)",
-          // Web3Forms honeypot — must stay unchecked/empty for real users.
-          botcheck: false,
-        }),
+        body: formData,
       });
 
-      const result = (await response.json()) as { success: boolean; message?: string };
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Submission failed");
+      let result: { success?: boolean; message?: string } = {};
+      try {
+        result = (await response.json()) as { success?: boolean; message?: string };
+      } catch {
+        // Some browsers occasionally fail to parse an empty/odd body.
+        if (!response.ok) throw new Error("Submission failed");
       }
 
-      reset();
-      showThanks();
+      // Email can still be delivered when the body is odd; treat HTTP OK
+      // or an explicit success flag as accepted.
+      accepted = response.ok && result.success !== false;
+      if (!accepted) {
+        throw new Error(result.message || "Submission failed");
+      }
     } catch {
       toast.error("Something went wrong", {
         description: "Please try again or email hello@qpid-daycare.com.",
       });
+      return;
     }
+
+    // Only after a confirmed accept — keep UI errors out of the fetch catch
+    // so a dialog/history glitch can't mask a successful email as a failure.
+    reset();
+    showThanks();
   };
+
+  const submitDisabled = isSubmitting || isSent;
 
   return (
     <section
@@ -325,8 +343,9 @@ export function ContactSection() {
                 size="lg"
                 className="w-full"
                 icon={<Heart className="w-5 h-5" />}
+                disabled={submitDisabled}
               >
-                {isSubmitting ? "Sending…" : "Request a Tour"}
+                {isSent ? "Request sent" : isSubmitting ? "Sending…" : "Request a Tour"}
               </QpidButton>
             </form>
           </div>

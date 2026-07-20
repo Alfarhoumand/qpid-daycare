@@ -20,6 +20,7 @@ type QpidButtonProps = {
   icon?: React.ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
+  disabled?: boolean;
 };
 
 const base =
@@ -48,12 +49,19 @@ export function QpidButton({
   icon,
   onClick,
   type = "button",
+  disabled = false,
 }: QpidButtonProps) {
   const reduce = useReducedMotion();
-  const classes = cn(base, variants[variant], variant !== "tertiary" && sizes[size], className);
+  const classes = cn(
+    base,
+    variants[variant],
+    variant !== "tertiary" && sizes[size],
+    disabled && "pointer-events-none opacity-60 cursor-not-allowed",
+    className,
+  );
 
-  const hover = reduce ? {} : { y: -3, scale: 1.03 };
-  const tap = reduce ? {} : { scale: 0.97 };
+  const hover = reduce || disabled ? {} : { y: -3, scale: 1.03 };
+  const tap = reduce || disabled ? {} : { scale: 0.97 };
 
   const content = (
     <>
@@ -65,8 +73,9 @@ export function QpidButton({
   if (href) {
     return (
       <motion.a
-        href={href}
-        onClick={onClick}
+        href={disabled ? undefined : href}
+        aria-disabled={disabled || undefined}
+        onClick={disabled ? (e) => e.preventDefault() : onClick}
         className={classes}
         whileHover={hover}
         whileTap={tap}
@@ -81,6 +90,7 @@ export function QpidButton({
     <motion.button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       className={classes}
       whileHover={hover}
       whileTap={tap}
