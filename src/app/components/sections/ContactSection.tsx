@@ -222,7 +222,7 @@ export function ContactSection() {
 
           <div className="mt-8 space-y-3">
             {[
-              { icon: Phone, label: "Call or text", value: "(760) 555-0123" },
+              { icon: Phone, label: "Call or text", value: "(760) 385-8447" },
               { icon: Mail, label: "Email", value: "hello@qpid-daycare.com" },
               { icon: MapPin, label: "Location", value: "Oceanside, California" },
             ].map((c) => {
