@@ -24,6 +24,7 @@ type FormValues = {
   startDate: string;
   contact: string;
   message: string;
+  botcheck: boolean;
 };
 
 const fieldBase =
@@ -51,11 +52,19 @@ export function ContactSection() {
   const [thanksOpen, setThanksOpen] = useState(false);
   const {
     control,
+    register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    defaultValues: { parentName: "", childAge: "", startDate: "", contact: "", message: "" },
+    defaultValues: {
+      parentName: "",
+      childAge: "",
+      startDate: "",
+      contact: "",
+      message: "",
+      botcheck: false,
+    },
   });
 
   useEffect(() => {
@@ -78,6 +87,13 @@ export function ContactSection() {
   };
 
   const onSubmit = async (data: FormValues) => {
+    // Honeypot tripped — pretend success so bots learn nothing.
+    if (data.botcheck) {
+      reset();
+      showThanks();
+      return;
+    }
+
     try {
       const response = await fetch("https://api.web3forms.com/submit", {
         method: "POST",
@@ -95,6 +111,8 @@ export function ContactSection() {
           child_age: data.childAge || "Not provided",
           start_date: data.startDate || "Not provided",
           message: data.message || "(No message)",
+          // Web3Forms honeypot — must stay unchecked/empty for real users.
+          botcheck: false,
         }),
       });
 
@@ -205,6 +223,17 @@ export function ContactSection() {
             </FloatingObject>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+              {/* Web3Forms honeypot — hidden from humans, traps bots that auto-fill. */}
+              <input
+                type="checkbox"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                className="hidden"
+                style={{ display: "none" }}
+                {...register("botcheck")}
+              />
+
               <div>
                 <Label htmlFor="parentName">Parent name</Label>
                 <Controller
