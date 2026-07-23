@@ -2,32 +2,24 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { SectionHeading } from "../SectionHeading";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "../ui/dialog";
-import {
-  Storybook,
-  BuildingBlocks,
-  TeddyBear,
-  Tree,
-  Sun,
-  Cloud,
-  Moon,
-  Flower,
-  Crayon,
-  Heart,
-  Star,
-  House,
-} from "../illustrations/QpidIllustrations";
+import { Cloud, House, Sun } from "../illustrations/QpidIllustrations";
+import { ImageWithFallback } from "../figma/ImageWithFallback";
 
-/**
- * Gallery of illustrated daycare "scenes" (no photos, per brief).
- * Each tile is a small composed SVG scene; clicking opens a soft lightbox.
- */
+import playImg from "@/assets/gallery/play.png";
+import readingImg from "@/assets/gallery/reading.png";
+import napImg from "@/assets/gallery/nap.png";
+import outdoorImg from "@/assets/gallery/outdoor.png";
+import mealsImg from "@/assets/gallery/meals.png";
+import learningImg from "@/assets/gallery/learning.png";
+import circleImg from "@/assets/gallery/circle.png";
 
 type Scene = {
   key: string;
   label: string;
   caption: string;
   bg: string;
-  render: (large?: boolean) => React.ReactNode;
+  image?: string;
+  render?: (large?: boolean) => React.ReactNode;
 };
 
 const SCENES: Scene[] = [
@@ -36,86 +28,42 @@ const SCENES: Scene[] = [
     label: "Play Area",
     caption: "A bright corner full of blocks, toys, and imagination.",
     bg: "linear-gradient(160deg,#FFF3D8,#FDE7C8)",
-    render: () => (
-      <>
-        <BuildingBlocks className="absolute bottom-6 left-8 w-28" />
-        <TeddyBear className="absolute bottom-4 right-10 w-24" />
-        <Star className="absolute top-6 left-10 w-8" />
-        <Heart className="absolute top-8 right-12 w-7" color="#F7A9B8" />
-      </>
-    ),
+    image: playImg,
   },
   {
     key: "reading",
     label: "Reading Corner",
     caption: "Cozy stories and soft cushions for quiet time.",
     bg: "linear-gradient(160deg,#E4F3FB,#DCEBF7)",
-    render: () => (
-      <>
-        <Storybook className="absolute bottom-8 left-1/2 -translate-x-1/2 w-36" />
-        <Cloud className="absolute top-4 left-6 w-24 opacity-80" />
-        <Sparkleish />
-      </>
-    ),
+    image: readingImg,
   },
   {
     key: "nap",
     label: "Nap Area",
     caption: "Calm, peaceful rest to recharge little bodies.",
     bg: "linear-gradient(160deg,#EDE7FB,#E4E8FB)",
-    render: () => (
-      <>
-        <Moon className="absolute top-6 right-10 w-24" />
-        <Star className="absolute top-10 left-12 w-7" color="#F8C84E" />
-        <Star className="absolute bottom-14 right-16 w-6" color="#83CDEE" />
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-40 h-16 rounded-3xl bg-qpid-pink/70" />
-        <div className="absolute bottom-8 left-[42%] w-14 h-10 rounded-2xl bg-white/80" />
-      </>
-    ),
+    image: napImg,
   },
   {
     key: "outdoor",
     label: "Outdoor Play",
     caption: "Fresh air, sunshine, and room to run and grow.",
     bg: "linear-gradient(160deg,#DDF3FB,#E8F6EE)",
-    render: () => (
-      <>
-        <Sun className="absolute top-4 right-8 w-24" />
-        <Cloud className="absolute top-6 left-6 w-24 opacity-80" />
-        <Tree className="absolute bottom-2 left-10 w-28" />
-        <Flower className="absolute bottom-4 right-14 w-16" />
-        <Flower className="absolute bottom-4 right-28 w-12" color="#F8C84E" />
-      </>
-    ),
+    image: outdoorImg,
   },
   {
     key: "meals",
     label: "Meal & Snack Setup",
     caption: "Healthy, provided meals shared together.",
     bg: "linear-gradient(160deg,#FFF3D8,#FDEBD8)",
-    render: () => (
-      <>
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full bg-white shadow-inner" />
-        <Flower className="absolute bottom-16 left-1/2 -translate-x-1/2 w-16" color="#F28C7A" />
-        <Heart className="absolute top-8 left-12 w-7" color="#7DBE68" />
-        <Star className="absolute top-10 right-14 w-7" />
-      </>
-    ),
+    image: mealsImg,
   },
   {
     key: "learning",
     label: "Learning Materials",
     caption: "Crayons, letters, and hands-on discovery.",
     bg: "linear-gradient(160deg,#E8F6EE,#DDF3FB)",
-    render: () => (
-      <>
-        <Crayon className="absolute bottom-6 left-16 w-9" color="#F28C7A" />
-        <Crayon className="absolute bottom-6 left-28 w-9" color="#7DBE68" />
-        <Crayon className="absolute bottom-6 left-40 w-9" color="#83CDEE" />
-        <BuildingBlocks className="absolute bottom-8 right-10 w-24" />
-        <Star className="absolute top-8 left-12 w-7" />
-      </>
-    ),
+    image: learningImg,
   },
   {
     key: "home",
@@ -135,24 +83,22 @@ const SCENES: Scene[] = [
     label: "Circle Time",
     caption: "Songs, colors, and shapes we learn together.",
     bg: "linear-gradient(160deg,#FDE7EF,#FFF3D8)",
-    render: () => (
-      <>
-        <Heart className="absolute top-8 left-1/2 -translate-x-1/2 w-12" color="#F7A9B8" />
-        <Star className="absolute bottom-12 left-16 w-9" />
-        <Star className="absolute bottom-16 right-16 w-8" color="#83CDEE" />
-        <Flower className="absolute bottom-4 left-1/2 -translate-x-1/2 w-16" color="#7DBE68" />
-      </>
-    ),
+    image: circleImg,
   },
 ];
 
-function Sparkleish() {
-  return (
-    <>
-      <Star className="absolute top-8 right-10 w-6" />
-      <Heart className="absolute bottom-10 left-10 w-6" color="#F28C7A" />
-    </>
-  );
+function SceneMedia({ scene, large = false }: { scene: Scene; large?: boolean }) {
+  if (scene.image) {
+    return (
+      <ImageWithFallback
+        src={scene.image}
+        alt={scene.label}
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    );
+  }
+
+  return <>{scene.render?.(large)}</>;
 }
 
 export function GallerySection() {
@@ -170,7 +116,7 @@ export function GallerySection() {
               A little tour of our <span className="text-qpid-green">happy spaces</span>
             </>
           }
-          subtitle="Illustrated scenes of the warm, playful corners where children spend their day."
+          subtitle="A peek at the warm, playful corners where children spend their day."
         />
 
         <div className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-5">
@@ -186,7 +132,7 @@ export function GallerySection() {
               className="group relative text-left rounded-3xl overflow-hidden border border-sand-300 shadow-[0_8px_24px_rgba(107,78,61,0.08)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-qpid-yellow/40"
             >
               <div className="relative aspect-square" style={{ background: s.bg }}>
-                {s.render()}
+                <SceneMedia scene={s} />
               </div>
               <div className="absolute bottom-0 inset-x-0 bg-white/85 backdrop-blur-sm px-3 py-2">
                 <span className="font-heading font-bold text-cocoa-600 text-[0.95rem]">
@@ -203,7 +149,7 @@ export function GallerySection() {
           {active && (
             <>
               <div className="relative aspect-[4/3]" style={{ background: active.bg }}>
-                {active.render(true)}
+                <SceneMedia scene={active} large />
               </div>
               <div className="p-6">
                 <DialogTitle className="font-heading text-cocoa-600 text-[1.5rem]">
